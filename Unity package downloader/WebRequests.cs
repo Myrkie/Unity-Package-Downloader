@@ -52,13 +52,15 @@ public class WebRequests
         public byte[]? AESKey;
         public string? Version;
         public string? Author;
-        public responsestruct(string? id, string? name, string? downloadUrl, byte[]? aesKey, string? version)
+        public string? Image;
+        public responsestruct(string? id, string? name, string? downloadUrl, byte[]? aesKey, string? version, string? image)
         {
             Id = id;
             Name = name;
             DownloadURL = downloadUrl;
             AESKey = aesKey;
             Version = version;
+            Image = image;
         }
     }
 
@@ -102,7 +104,6 @@ public class WebRequests
         var sResponsestruct = new responsestruct();
         foreach (var responsePackage in ids)
         {
-            Thread.Sleep(500);
             var responseProduct = await Client.GetAsync($"https://packages-v2.unity.com/-/api/product/{responsePackage}");
             responseProduct.EnsureSuccessStatusCode();
             
@@ -123,7 +124,7 @@ public class WebRequests
             var deserializeProductinfo = JsonSerializer.Deserialize<ProductInfoJSON.RootObject>(responsebodyInfo);
 
 
-            if (deserializeProductinfo != null)
+            if (deserializeProductinfo != null && deserializeProductJson != null)
             {
                 sResponsestruct.DownloadURL = deserializeProductinfo.result.download.url;
                 sResponsestruct.Id = deserializeProductinfo.result.download.id;
@@ -131,10 +132,27 @@ public class WebRequests
                 var bytes = Convert.FromHexString(deserializeProductinfo.result.download.key);
                 sResponsestruct.AESKey = bytes;
                 sResponsestruct.Name = deserializeProductinfo.result.download.filename_safe_package_name;
+                if (deserializeProductJson.mainImage.big != null)
+                {
+                    var str = deserializeProductJson.mainImage.big;
+                    var str2 = str.Replace(@"\", "/");
+                    var str3 = str2.Remove(0,2);
+                    var image = $"http://{str3}";
+                    
+                    sResponsestruct.Image = image;
+                }
+                else
+                {
+                    var str = deserializeProductJson.mainImage.big_v2;
+                    var str2 = str.Replace(@"\", "/");
+                    var str3 = str2.Remove(0,2);
+                    var image = $"http://{str3}";
+                    
+                    sResponsestruct.Image = image;
+                }
+                sResponsestruct.Version = deserializeProductJson.version.name;
             }
 
-            if (deserializeProductJson != null) sResponsestruct.Version = deserializeProductJson.version.name;
-            
             Responses.Add(sResponsestruct);
             
             
@@ -155,6 +173,16 @@ public class WebRequests
             {
                 info.Create();
             }
+
+            if (File.Exists($"{path}\\{name}.jpg"))
+            {
+                Console.WriteLine($"file exists aborting: {downloads.Name}.jpg");
+                continue;
+            }
+            var i = new WebClient();
+            Console.WriteLine($"Downloading Image: {downloads.Image}");
+            await i.DownloadFileTaskAsync(downloads.Image, $"{path}\\{name}.jpg");
+            
             
             var c = new MyrkieWebClient();
             c.Timeout = 60 * 60 * 60 * 60;
@@ -163,8 +191,8 @@ public class WebRequests
                 Console.WriteLine($"file exists aborting: {downloads.Name}");
                 continue;
             }
-            Console.WriteLine($"downloading: {downloads.Name}");
-
+            
+            Console.WriteLine($"downloading File: {downloads.DownloadURL}");
             await c.DownloadFileTaskAsync(downloads.DownloadURL, $"{path}\\{name}_Encrypted.AES");
             //using var downloadresp = await Client2.GetStreamAsync(downloads.DownloadURL);
             // if (downloadresp.StatusCode != HttpStatusCode.OK)
