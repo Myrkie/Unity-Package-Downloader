@@ -33,10 +33,10 @@ public class Decrpytion
 
         try
         {
-            instream.CopyToAsync(cryptoStream);
+            await instream.CopyToAsync(cryptoStream);
 
             // Complete the decryption process
-            cryptoStream.FlushFinalBlockAsync();
+            await cryptoStream.FlushFinalBlockAsync();
         }
         finally
         {

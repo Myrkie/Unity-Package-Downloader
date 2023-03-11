@@ -9,7 +9,7 @@ namespace Unity_package_downloader;
 public class WebRequests
 {
     
-    private static string token = "MKgiDNVrYSMjcJRVV07LciTdqkTgoAv5nmaosAg-tAM002f";
+    internal static string token = "LTqIWThrNGsA4XBexzIP7DqdCyY79ItokhrubnQSb_o002f";
     private static readonly List<responsestruct> Responses = new();
     private static readonly List<string> ids = new();
     private static readonly MediaTypeWithQualityHeaderValue Accept = new("*/*");
@@ -194,24 +194,12 @@ public class WebRequests
             
             Console.WriteLine($"downloading File: {downloads.DownloadURL}");
             await c.DownloadFileTaskAsync(downloads.DownloadURL, $"{path}\\{name}_Encrypted.AES");
-            //using var downloadresp = await Client2.GetStreamAsync(downloads.DownloadURL);
-            // if (downloadresp.StatusCode != HttpStatusCode.OK)
-            // {
-            //     Console.WriteLine(downloadresp.Headers.WwwAuthenticate);
-            //     Console.WriteLine($"Package not downloadable {downloads.Id}");
-            //     continue;
-            // }
-            
-            
-            //var responsebodyInfo = await downloadresp.Content.ReadAsStreamAsync();
 
-            //SaveStreamAsFile($"{path}", downloadresp, $"{name}_Encrypted");
-            
-            
-            
             if (downloads.AESKey.Length > 0)
             {
-                Decrpytion.DecryptString($"{path}\\{name}_Encrypted.AES", $"{path}\\{name}.unitypackage", downloads.AESKey[..32], downloads.AESKey[32..]);
+                Console.WriteLine("Starting Decrpytion");
+                await Decrpytion.DecryptString($"{path}\\{name}_Encrypted.AES", $"{path}\\{name}.unitypackage", downloads.AESKey[..32], downloads.AESKey[32..]);
+                Console.WriteLine("Decrpytion Finished");
                 File.Delete($"{path}\\{name}_Encrypted.AES");
             }else File.Move($"{path}\\{name}_Encrypted.AES",$"{path}\\{name}.unitypackage");
 
