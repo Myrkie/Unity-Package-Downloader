@@ -9,7 +9,7 @@ namespace Unity_package_downloader;
 public class WebRequests
 {
     
-    internal static string token = "LTqIWThrNGsA4XBexzIP7DqdCyY79ItokhrubnQSb_o002f";
+    internal static string token = "ttJRQpsmeoB7cZrLP0n8LI9onZFUth4NvesEqVJaD6E002f";
     private static readonly List<responsestruct> Responses = new();
     private static readonly List<string> ids = new();
     private static readonly MediaTypeWithQualityHeaderValue Accept = new("*/*");
@@ -79,6 +79,7 @@ public class WebRequests
 
     private static async Task GetPurchases(int offset)
     {
+        Console.WriteLine($"getting page {offset}");
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         using var response =
             await Client.GetAsync($"https://packages-v2.unity.com/-/api/purchases?offset={offset}&limit=15&query=");
@@ -88,7 +89,7 @@ public class WebRequests
 
         var deserializePurchasesJson = JsonSerializer.Deserialize<PurchasesJSON.RootObject>(responsebody);
 
-        if (deserializePurchasesJson.results != null)
+        if (deserializePurchasesJson.results != null && deserializePurchasesJson.results.Length > 0)
         {
             endreached = false;
             foreach (var result in deserializePurchasesJson.results)
