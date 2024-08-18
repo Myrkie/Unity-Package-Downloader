@@ -9,9 +9,9 @@ namespace Unity_package_downloader;
 public class WebRequests
 {
     
-    internal static string token = "ttJRQpsmeoB7cZrLP0n8LI9onZFUth4NvesEqVJaD6E002f";
-    private static readonly List<responsestruct> Responses = new();
-    private static readonly List<string> ids = new();
+    internal static string token = "LHd_djOrSSn2XBO0hqo-mVd-Oj4nr8ZZybX6GO9T57c002f";
+    private static readonly List<ResponseStruct> Responses = new();
+    private static readonly List<string> ProductIDs = new();
     private static readonly MediaTypeWithQualityHeaderValue Accept = new("*/*");
     private static readonly StringWithQualityHeaderValue Deflate = new("deflate");
     private static readonly StringWithQualityHeaderValue Gzip = new("gzip");
@@ -30,21 +30,8 @@ public class WebRequests
             Authorization = new AuthenticationHeaderValue("Bearer", token)
         }
     };
-    
-    
-    private static readonly HttpClient Client2 = new(handler)
-    {
-        DefaultRequestHeaders =
-        {
-            Accept = { Accept },
-            AcceptEncoding = { Deflate, Gzip }
-            
-        }
-    };
-    
-    
 
-    struct responsestruct
+    struct ResponseStruct
     {
         public string? Id;
         public string? Name;
@@ -53,27 +40,16 @@ public class WebRequests
         public string? Version;
         public string? Author;
         public string? Image;
-        public responsestruct(string? id, string? name, string? downloadUrl, byte[]? aesKey, string? version, string? image)
-        {
-            Id = id;
-            Name = name;
-            DownloadURL = downloadUrl;
-            AESKey = aesKey;
-            Version = version;
-            Image = image;
-        }
     }
 
     private static bool endreached;
 
-    public static async Task loop()
+    public static async Task GetProductIds()
     {
         for (var offset= 0; !endreached;  offset += 15)
         {
             await GetPurchases (offset);
         }
-
-        await GetInfo();
     }
     
 
@@ -94,81 +70,82 @@ public class WebRequests
             endreached = false;
             foreach (var result in deserializePurchasesJson.results)
             {
-                ids.Add(result.packageId.ToString());
+                ProductIDs.Add(result.packageId.ToString());
             }
         }
         else endreached = true;
     }
     
-    private static async Task GetInfo()
+    public static async Task GetProductInfo()
     {
-        var sResponsestruct = new responsestruct();
-        foreach (var responsePackage in ids)
+        var tasks = ProductIDs.Select(async responsePackage =>
         {
-            var responseProduct = await Client.GetAsync($"https://packages-v2.unity.com/-/api/product/{responsePackage}");
-            responseProduct.EnsureSuccessStatusCode();
-            
-            var responsebodyProduct = await responseProduct.Content.ReadAsStringAsync();
-            var deserializeProductJson = JsonSerializer.Deserialize<ProductJSON.RootObject>(responsebodyProduct);
-            
-            using var responseinfo = await Client.GetAsync($"https://packages-v2.unity.com/-/api/legacy-package-download-info/{responsePackage}");
-
+            var urlInfo = $"https://packages-v2.unity.com/-/api/legacy-package-download-info/{responsePackage}";
+            var responseinfo = await Client.GetAsync(urlInfo);
             if (responseinfo.StatusCode != HttpStatusCode.OK)
             {
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Package not downloadable {responsePackage}");
-                continue;
+                Console.ResetColor();
+                return;
             }
-            Console.WriteLine($"downloading Json: {responsePackage}");
+
+            var urlProduct = $"https://packages-v2.unity.com/-/api/product/{responsePackage}";
+            var responseProduct = await Client.GetAsync(urlProduct);
+            var responsebodyProduct = await responseProduct.Content.ReadAsStringAsync();
+            var deserializeProductJson = JsonSerializer.Deserialize<ProductJSON.RootObject>(responsebodyProduct);
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"Downloading Json of: {responsePackage}");
+            Console.ResetColor();
 
             var responsebodyInfo = await responseinfo.Content.ReadAsStringAsync();
-
             var deserializeProductinfo = JsonSerializer.Deserialize<ProductInfoJSON.RootObject>(responsebodyInfo);
 
-
-            if (deserializeProductinfo != null && deserializeProductJson != null)
+            if (deserializeProductinfo?.result.download != null)
             {
-                sResponsestruct.DownloadURL = deserializeProductinfo.result.download.url;
-                sResponsestruct.Id = deserializeProductinfo.result.download.id;
-                sResponsestruct.Author = deserializeProductinfo.result.download.filename_safe_publisher_name;
-                var bytes = Convert.FromHexString(deserializeProductinfo.result.download.key);
-                sResponsestruct.AESKey = bytes;
-                sResponsestruct.Name = deserializeProductinfo.result.download.filename_safe_package_name;
-                if (deserializeProductJson.mainImage.big != null)
+                var imageUrl = deserializeProductJson.mainImage.big ?? deserializeProductJson.mainImage.big_v2;
+                if (!string.IsNullOrEmpty(imageUrl))
                 {
-                    var str = deserializeProductJson.mainImage.big;
-                    var str2 = str.Replace(@"\", "/");
-                    var str3 = str2.Remove(0,2);
-                    var image = $"http://{str3}";
-                    
-                    sResponsestruct.Image = image;
+                    var sResponsestruct = new ResponseStruct
+                    {
+                        DownloadURL = deserializeProductinfo.result.download.url,
+                        Id = deserializeProductinfo.result.download.id,
+                        Author = deserializeProductinfo.result.download.filename_safe_publisher_name,
+                        AESKey = !string.IsNullOrEmpty(deserializeProductinfo.result.download.key)
+                            ? Convert.FromHexString(deserializeProductinfo.result.download.key)
+                            : Array.Empty<byte>(),
+                        Name = deserializeProductinfo.result.download.filename_safe_package_name,
+                        Image = $"http://{imageUrl.Replace(@"\", "/").Remove(0, 2)}",
+                        Version = deserializeProductJson.version?.name
+                    };
+
+                    lock (Responses)
+                    {
+                        Responses.Add(sResponsestruct);
+                    }
                 }
-                else
-                {
-                    var str = deserializeProductJson.mainImage.big_v2;
-                    var str2 = str.Replace(@"\", "/");
-                    var str3 = str2.Remove(0,2);
-                    var image = $"http://{str3}";
-                    
-                    sResponsestruct.Image = image;
-                }
-                sResponsestruct.Version = deserializeProductJson.version.name;
             }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Failed to deserialize information for package {responsePackage}");
+                Console.ResetColor();
+            }
+        });
 
-            Responses.Add(sResponsestruct);
-            
-            
-        }
-
-        await DownloadShit();
+        await Task.WhenAll(tasks);
     }
 
-    private static async Task DownloadShit()
+    public static async Task DownloadProducts(string path)
     {
         foreach (var downloads in Responses)
         {
-            var name = string.Concat($"assetstore_Tool_{downloads.Name}({downloads.Version})_{downloads.Id}");
-            var path = $"G:\\WINDownloads\\upload\\test\\{downloads.Author}";
-            
+            Console.WriteLine($"asset name: {downloads.Name}");
+            var trimmedname = downloads.Name.Replace("-", "").Replace(".", "").Replace(" ", ".").Replace("..", ".");
+            Console.WriteLine($"asset name trimmed: {trimmedname}");
+            var name = string.Concat($"{downloads.Author.Replace(" ", ".")}_UnityAsset_{trimmedname}(V{downloads.Version})_{downloads.Id}");
+
             DirectoryInfo info = new DirectoryInfo(path);
             if (!info.Exists)
             {
