@@ -1,17 +1,17 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using Unity_package_downloader.Decryption;
+using Serilog;
 using Unity_package_downloader.Json;
 
 namespace Unity_package_downloader;
 
 public class WebRequests
 {
-    
-    internal static string token = "LHd_djOrSSn2XBO0hqo-mVd-Oj4nr8ZZybX6GO9T57c002f";
-    private static readonly List<ResponseStruct> Responses = new();
-    private static readonly List<string> ProductIDs = new();
+    private static string token = "LHd_djOrSSn2XBO0hqo-mVd-Oj4nr8ZZybX6GO9T57c002f";
+    private static readonly ILogger Logger = Log.ForContext(typeof(WebRequests));
+    private static readonly List<ResponseStruct> Responses = [];
+    private static readonly List<string> ProductIDs = [];
     private static readonly MediaTypeWithQualityHeaderValue Accept = new("*/*");
     private static readonly StringWithQualityHeaderValue Deflate = new("deflate");
     private static readonly StringWithQualityHeaderValue Gzip = new("gzip");
@@ -55,7 +55,7 @@ public class WebRequests
 
     private static async Task GetPurchases(int offset)
     {
-        Console.WriteLine($"getting page {offset}");
+        Logger.Information("getting page {PurchaseOffset}", offset);
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         using var response =
             await Client.GetAsync($"https://packages-v2.unity.com/-/api/purchases?offset={offset}&limit=15&query=");
@@ -84,9 +84,7 @@ public class WebRequests
             var responseinfo = await Client.GetAsync(urlInfo);
             if (responseinfo.StatusCode != HttpStatusCode.OK)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"Package not downloadable {responsePackage}");
-                Console.ResetColor();
+                Logger.Information("Package not downloadable {responsePackage}", responsePackage);
                 return;
             }
 
@@ -95,9 +93,7 @@ public class WebRequests
             var responsebodyProduct = await responseProduct.Content.ReadAsStringAsync();
             var deserializeProductJson = JsonSerializer.Deserialize<ProductJSON.RootObject>(responsebodyProduct);
 
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"Downloading Json of: {responsePackage}");
-            Console.ResetColor();
+            Logger.Information("Downloading Json of: {responsePackage}", responsePackage);
 
             var responsebodyInfo = await responseinfo.Content.ReadAsStringAsync();
             var deserializeProductinfo = JsonSerializer.Deserialize<ProductInfoJSON.RootObject>(responsebodyInfo);
@@ -128,9 +124,7 @@ public class WebRequests
             }
             else
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"Failed to deserialize information for package {responsePackage}");
-                Console.ResetColor();
+                Logger.Error("Failed to deserialize information for package {errorPackage}", responsePackage);
             }
         });
 
@@ -141,9 +135,9 @@ public class WebRequests
     {
         foreach (var downloads in Responses)
         {
-            Console.WriteLine($"asset name: {downloads.Name}");
+            Logger.Information("asset name: {assetName}", downloads.Name);
             var trimmedname = downloads.Name.Replace("-", "").Replace(".", "").Replace(" ", ".").Replace("..", ".");
-            Console.WriteLine($"asset name trimmed: {trimmedname}");
+            Logger.Information("asset name trimmed: {trimmedAssetName}", trimmedname);
             var name = string.Concat($"{downloads.Author.Replace(" ", ".")}_UnityAsset_{trimmedname}(V{downloads.Version})_{downloads.Id}");
 
             DirectoryInfo info = new DirectoryInfo(path);
@@ -154,11 +148,11 @@ public class WebRequests
 
             if (File.Exists($"{path}\\{name}.jpg"))
             {
-                Console.WriteLine($"file exists aborting: {downloads.Name}.jpg");
+                Logger.Information("file exists aborting: {fileDownload}.jpg", downloads.Name);
                 continue;
             }
             var i = new WebClient();
-            Console.WriteLine($"Downloading Image: {downloads.Image}");
+            Logger.Information("Downloading Image: {image}", downloads.Image);
             await i.DownloadFileTaskAsync(downloads.Image, $"{path}\\{name}.jpg");
             
             
@@ -166,18 +160,18 @@ public class WebRequests
             c.Timeout = 60 * 60 * 60 * 60;
             if (File.Exists($"{path}\\{name}.unitypackage"))
             {
-                Console.WriteLine($"file exists aborting: {downloads.Name}");
+                Logger.Information("file exists aborting: {fileDownload}", downloads.Name);
                 continue;
             }
             
-            Console.WriteLine($"downloading File: {downloads.DownloadURL}");
+            Logger.Information("downloading File: {fileDownload}", downloads.DownloadURL);
             await c.DownloadFileTaskAsync(downloads.DownloadURL, $"{path}\\{name}_Encrypted.AES");
 
             if (downloads.AESKey.Length > 0)
             {
-                Console.WriteLine("Starting Decrpytion");
-                await Decrpytion.DecryptString($"{path}\\{name}_Encrypted.AES", $"{path}\\{name}.unitypackage", downloads.AESKey[..32], downloads.AESKey[32..]);
-                Console.WriteLine("Decrpytion Finished");
+                Logger.Information("Starting Decryption");
+                await Decryption.Decryption.DecryptString($"{path}\\{name}_Encrypted.AES", $"{path}\\{name}.unitypackage", downloads.AESKey[..32], downloads.AESKey[32..]);
+                Logger.Information("Decryption Finished");
                 File.Delete($"{path}\\{name}_Encrypted.AES");
             }else File.Move($"{path}\\{name}_Encrypted.AES",$"{path}\\{name}.unitypackage");
 
@@ -211,14 +205,6 @@ public class MyrkieWebClient : WebClient
         w.Timeout = Timeout;
         ((HttpWebRequest)w).ReadWriteTimeout = Timeout;
         return w;
-    }
- 
-    public new async Task<string> DownloadStringTaskAsync(Uri address)
-    {
-        var t = base.DownloadStringTaskAsync(address);
-        if (await Task.WhenAny(t, Task.Delay(Timeout)) != t)
-            CancelAsync();
-        return await t;
     }
     #endregion
  
