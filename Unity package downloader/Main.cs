@@ -42,7 +42,7 @@ class program
 
                 _logger.Information("Starting...");
 
-                var path = outputDirectory is { Length: 0 } ? outputDirectory : @"G:\WINDownloads\upload";
+                var path = Path.Combine(outputDirectory, "UnityPackages");
                 
                 _logger.Debug("Using Path: {path}", path);
 
@@ -59,7 +59,7 @@ class program
                 await WebRequests.DownloadProducts(path);
 
                 Thread.Sleep(5000);
-            }, bearerToken, bearerToken);
+            }, outputDirectoryOption, bearerToken);
         var commandLineBuilder = new CommandLineBuilder(rootCommand)
             .UseHelp();
 
