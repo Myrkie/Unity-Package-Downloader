@@ -8,7 +8,6 @@ namespace Unity_package_downloader;
 
 public class WebRequests
 {
-    private static string token = "LHd_djOrSSn2XBO0hqo-mVd-Oj4nr8ZZybX6GO9T57c002f";
     private static readonly ILogger Logger = Log.ForContext(typeof(WebRequests));
     private static readonly List<ResponseStruct> Responses = [];
     private static readonly List<string> ProductIDs = [];
@@ -26,8 +25,7 @@ public class WebRequests
         DefaultRequestHeaders =
         {
             Accept = { Accept },
-            AcceptEncoding = { Deflate, Gzip },
-            Authorization = new AuthenticationHeaderValue("Bearer", token)
+            AcceptEncoding = { Deflate, Gzip }
         }
     };
 
@@ -44,8 +42,9 @@ public class WebRequests
 
     private static bool endreached;
 
-    public static async Task GetProductIds()
+    public static async Task GetProductIds(string token)
     {
+        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         for (var offset= 0; !endreached;  offset += 15)
         {
             await GetPurchases (offset);

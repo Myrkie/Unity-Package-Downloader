@@ -19,9 +19,16 @@ class program
             getDefaultValue: () => "./UnityPackages"
         );
         
-        rootCommand.AddGlobalOption(outputDirectoryOption);
+        var bearerToken = new Option<string?>(
+            name: "--bearer",
+            description: "Bearer Token",
+            getDefaultValue: () => null
+        );
         
-        rootCommand.SetHandler(async (outputDirectory) =>
+        rootCommand.AddGlobalOption(outputDirectoryOption);
+        rootCommand.AddOption(bearerToken);
+        
+        rootCommand.SetHandler(async (outputDirectory, token) =>
             {
                 Log.Logger = new LoggerConfiguration()
                     .MinimumLevel.Verbose()
@@ -33,18 +40,26 @@ class program
 
                 _logger = Log.ForContext(typeof(program));
 
-
-                var path = outputDirectory.Length == 0 ? @"G:\WINDownloads\upload" : outputDirectory;
                 _logger.Information("Starting...");
 
-                await WebRequests.GetProductIds();
+                var path = outputDirectory is { Length: 0 } ? outputDirectory : @"G:\WINDownloads\upload";
+                
+                _logger.Debug("Using Path: {path}", path);
+
+                if (string.IsNullOrEmpty(token))
+                {
+                    _logger.Fatal("Token is null");
+                    Environment.Exit(0);
+                }
+                
+                await WebRequests.GetProductIds(token);
 
                 await WebRequests.GetProductInfo();
 
                 await WebRequests.DownloadProducts(path);
 
                 Thread.Sleep(5000);
-            }, outputDirectoryOption);
+            }, bearerToken, bearerToken);
         var commandLineBuilder = new CommandLineBuilder(rootCommand)
             .UseHelp();
 
