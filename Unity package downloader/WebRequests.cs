@@ -45,11 +45,10 @@ namespace Unity_package_downloader
             using var response =
                 await client.GetAsync($"https://packages-v2.unity.com/-/api/purchases?offset={offset}&limit=15&query=");
             response.EnsureSuccessStatusCode();
-            var content = await response.Content.ReadAsStringAsync();
+            var responsebodyPurchases = await response.Content.ReadAsStringAsync();
 
-
-            var deserializePurchasesJson = JsonSerializer.Deserialize<PurchaseRoot>(content);
-
+            var deserializePurchasesJson = JsonSerializer.Deserialize(responsebodyPurchases, PurchaseJsonContext.Default.PurchaseRoot);
+            
             if (deserializePurchasesJson.results is { Length: > 0 })
             {
                 _endReached = false;
@@ -76,12 +75,12 @@ namespace Unity_package_downloader
                 var urlProduct = $"https://packages-v2.unity.com/-/api/product/{responsePackage}";
                 var responseProduct = await client.GetAsync(urlProduct);
                 var responsebodyProduct = await responseProduct.Content.ReadAsStringAsync();
-                var deserializeProductJson = JsonSerializer.Deserialize<ProductRoot>(responsebodyProduct);
+                var deserializeProductJson = JsonSerializer.Deserialize(responsebodyProduct, ProductJsonContext.Default.ProductRoot);
 
                 _logger.Information("Downloading Json of: {responsePackage}", responsePackage);
 
                 var responsebodyInfo = await responseinfo.Content.ReadAsStringAsync();
-                var deserializeProductinfo = JsonSerializer.Deserialize<ProductInfoRoot>(responsebodyInfo);
+                var deserializeProductinfo = JsonSerializer.Deserialize(responsebodyInfo, ProductInfoJsonContext.Default.ProductInfoRoot);
 
                 if (deserializeProductinfo?.result.download != null)
                 {
