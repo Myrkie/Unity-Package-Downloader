@@ -1,38 +1,38 @@
 ﻿using System.Security.Cryptography;
 
-namespace Unity_package_downloader.Decryption;
-
-public class Decryption
+namespace Unity_package_downloader.Decryption
 {
-
-    public static async Task DecryptString(string inputFile, string outputFile, IEnumerable<byte> key, byte[] iv)
+    public static class Decryption
     {
-        var encryptor = Aes.Create();
-
-        encryptor.Mode = CipherMode.CBC;
-
-        encryptor.Key = key.Take(32).ToArray();
-        encryptor.IV = iv;
-
-        var fileStream = File.OpenWrite(outputFile);
-
-        var instream = File.OpenRead(inputFile);
-
-        var aesDecryptor = encryptor.CreateDecryptor();
-
-        var cryptoStream = new CryptoStream(fileStream, aesDecryptor, CryptoStreamMode.Write);
-
-        try
+        public static async Task DecryptString(string inputFile, string outputFile, IEnumerable<byte> key, byte[] iv)
         {
-            await instream.CopyToAsync(cryptoStream);
+            var encryptor = Aes.Create();
 
-            await cryptoStream.FlushFinalBlockAsync();
-        }
-        finally
-        {
-            instream.Close();
-            fileStream.Close();
-            cryptoStream.Close();
+            encryptor.Mode = CipherMode.CBC;
+
+            encryptor.Key = key.Take(32).ToArray();
+            encryptor.IV = iv;
+
+            var fileStream = File.OpenWrite(outputFile);
+
+            var instream = File.OpenRead(inputFile);
+
+            var aesDecryptor = encryptor.CreateDecryptor();
+
+            var cryptoStream = new CryptoStream(fileStream, aesDecryptor, CryptoStreamMode.Write);
+
+            try
+            {
+                await instream.CopyToAsync(cryptoStream);
+
+                await cryptoStream.FlushFinalBlockAsync();
+            }
+            finally
+            {
+                instream.Close();
+                fileStream.Close();
+                cryptoStream.Close();
+            }
         }
     }
 }

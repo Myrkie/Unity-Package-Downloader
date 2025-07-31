@@ -1,8 +1,7 @@
-﻿namespace Unity_package_downloader.Json;
-
-public class ProductJSON
+﻿namespace Unity_package_downloader.Json.Products
 {
-    public class RootObject
+    [Serializable]
+    public class ProductRoot
     {
         public string createdBy { get; set; }
         public string updatedBy { get; set; }
@@ -38,6 +37,7 @@ public class ProductJSON
         public object[] supportLinks { get; set; }
     }
 
+    [Serializable]
     public class Properties
     {
         public string genesisItemId { get; set; }
@@ -45,6 +45,7 @@ public class ProductJSON
         public string launchPromotion { get; set; }
     }
 
+    [Serializable]
     public class Version
     {
         public string id { get; set; }
@@ -52,6 +53,7 @@ public class ProductJSON
         public string publishedDate { get; set; }
     }
 
+    [Serializable]
     public class ProductReview
     {
         public string reviewCount { get; set; }
@@ -60,6 +62,7 @@ public class ProductJSON
         public string hotness { get; set; }
     }
 
+    [Serializable]
     public class ProductRatings
     {
         public string currency { get; set; }
@@ -68,6 +71,7 @@ public class ProductJSON
         public string entitlementType { get; set; }
     }
 
+    [Serializable]
     public class ProductPublisher
     {
         public string id { get; set; }
@@ -80,6 +84,7 @@ public class ProductJSON
         public string gaPrefix { get; set; }
     }
 
+    [Serializable]
     public class Category
     {
         public string id { get; set; }
@@ -87,6 +92,7 @@ public class ProductJSON
         public string slug { get; set; }
     }
 
+    [Serializable]
     public class MainImage
     {
         public string big { get; set; }
@@ -100,6 +106,7 @@ public class ProductJSON
         public string big_v2 { get; set; }
     }
 
+    [Serializable]
     public class MainImageWebp
     {
         public string icon { get; set; }
@@ -109,6 +116,7 @@ public class ProductJSON
         public string big_v2 { get; set; }
     }
 
+    [Serializable]
     public class Images
     {
         public int height { get; set; }
@@ -119,6 +127,7 @@ public class ProductJSON
         public string type { get; set; }
     }
 
+    [Serializable]
     public class Localizations
     {
         public Ko_KR ko_KR { get; set; }
@@ -126,6 +135,7 @@ public class ProductJSON
         public Ja_JP ja_JP { get; set; }
     }
 
+    [Serializable]
     public class Ko_KR
     {
         public string name { get; set; }
@@ -133,6 +143,7 @@ public class ProductJSON
         public string publishNotes { get; set; }
     }
 
+    [Serializable]
     public class Zh_CN
     {
         public string name { get; set; }
@@ -140,6 +151,7 @@ public class ProductJSON
         public string publishNotes { get; set; }
     }
 
+    [Serializable]
     public class Ja_JP
     {
         public string name { get; set; }
@@ -147,11 +159,13 @@ public class ProductJSON
         public string publishNotes { get; set; }
     }
 
+    [Serializable]
     public class Uploads
     {
         public _018_4_0f1 _018_4_0f1 { get; set; }
     }
 
+    [Serializable]
     public class _018_4_0f1
     {
         public string assetCount { get; set; }

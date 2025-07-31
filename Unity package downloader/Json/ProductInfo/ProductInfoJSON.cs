@@ -1,17 +1,18 @@
-﻿namespace Unity_package_downloader.Json;
-
-public class ProductInfoJSON
+﻿namespace Unity_package_downloader.Json.ProductInfo
 {
-    public class RootObject
+    [Serializable]
+    public class ProductInfoRoot
     {
         public Result result { get; set; }
     }
 
+    [Serializable]
     public class Result
     {
         public Download download { get; set; }
     }
 
+    [Serializable]
     public class Download
     {
         public string filename_safe_category_name { get; set; }

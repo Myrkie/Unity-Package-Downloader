@@ -1,8 +1,7 @@
-﻿namespace Unity_package_downloader.Json;
-
-public class PurchasesJSON
+﻿namespace Unity_package_downloader.Json.Purchases
 {
-    public class RootObject
+    [Serializable]
+    public class PurchaseRoot
     {
         public Results[] results { get; set; }
         public int total { get; set; }
@@ -10,6 +9,7 @@ public class PurchasesJSON
         public PublisherSuggest[] publisherSuggest { get; set; }
     }
 
+    [Serializable]
     public class Results
     {
         public string id { get; set; }
@@ -22,12 +22,14 @@ public class PurchasesJSON
         public bool isHidden { get; set; }
     }
 
+    [Serializable]
     public class Category
     {
         public string name { get; set; }
         public int count { get; set; }
     }
 
+    [Serializable]
     public class PublisherSuggest
     {
         public string name { get; set; }

@@ -2,68 +2,67 @@
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 using Serilog;
-using Unity_package_downloader;
 
-class program
+namespace Unity_package_downloader
 {
-    private static ILogger _logger = null!;
-
-    // todo: Oath shit
-    static async Task<int> Main(string[] args)
+    class Program
     {
-        var rootCommand = new RootCommand("Unity Package Downloader");
+        private static readonly ILogger Logger = Log.ForContext(typeof(Program));
+        static async Task<int> Main(string[] args)
+        {
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Verbose()
+                .WriteTo.Console(outputTemplate:
+                    "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
+                    theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code)
+                .CreateLogger();
         
-        var outputDirectoryOption = new Option<string>(
-            name: "--output-dir",
-            description: "Output Directory",
-            getDefaultValue: () => "./UnityPackages"
-        );
+            var rootCommand = new RootCommand("Unity Package Downloader");
         
-        var bearerToken = new Option<string?>(
-            name: "--bearer",
-            description: "Bearer Token",
-            getDefaultValue: () => null
-        );
+            var outputDirectoryOption = new Option<string>(
+                name: "--output-dir",
+                description: "Output Directory",
+                getDefaultValue: () => "./Out"
+            );
         
-        rootCommand.AddGlobalOption(outputDirectoryOption);
-        rootCommand.AddOption(bearerToken);
+            var bearerToken = new Option<string?>(
+                name: "--bearer",
+                description: "Bearer Token",
+                getDefaultValue: () => null
+            );
         
-        rootCommand.SetHandler(async (outputDirectory, token) =>
+            rootCommand.AddGlobalOption(outputDirectoryOption);
+            rootCommand.AddOption(bearerToken);
+        
+            rootCommand.SetHandler(async (outputDirectory, token) =>
             {
-                Log.Logger = new LoggerConfiguration()
-                    .MinimumLevel.Verbose()
-                    .WriteTo.Console(
-                        outputTemplate:
-                        "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
-                        theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code)
-                    .CreateLogger();
+                Logger.Information("Starting...");
 
-                _logger = Log.ForContext(typeof(program));
-
-                _logger.Information("Starting...");
-
-                var path = Path.Combine(outputDirectory, "UnityPackages");
-                
-                _logger.Debug("Using Path: {path}", path);
+                Logger.Debug("Using Path: {path}", outputDirectory);
 
                 if (string.IsNullOrEmpty(token))
                 {
-                    _logger.Fatal("Token is null");
+                    Logger.Fatal("Token is null");
+                    Environment.Exit(0);
+                }
+
+                if (!Path.Exists(outputDirectory))
+                {
+                    Logger.Fatal("Output directory does not exist");
                     Environment.Exit(0);
                 }
                 
-                await WebRequests.GetProductIds(token);
-
-                await WebRequests.GetProductInfo();
-
-                await WebRequests.DownloadProducts(path);
+                var webRequests = new WebRequests();
+                await webRequests.GetProductIds(token);
+                await webRequests.DownloadProducts(outputDirectory);
 
                 Thread.Sleep(5000);
             }, outputDirectoryOption, bearerToken);
-        var commandLineBuilder = new CommandLineBuilder(rootCommand)
-            .UseHelp();
+            var commandLineBuilder = new CommandLineBuilder(rootCommand)
+                .UseHelp();
 
-        var built = commandLineBuilder.Build();
-        return await built.InvokeAsync(args);
+            var built = commandLineBuilder.Build();
+            return await built.InvokeAsync(args);
+        }
     }
 }
