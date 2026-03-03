@@ -1,7 +1,7 @@
 ﻿# Unity Packages Bulk downloader
 
 # Requirements
-* .NET Desktop Runtime [9.X.X](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+* .NET Desktop Runtime [10.X.X](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) only for building
 * Tested only with unity 2022.3.22f1
 
 # Usage
