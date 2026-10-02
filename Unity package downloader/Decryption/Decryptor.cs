@@ -2,15 +2,15 @@
 
 namespace Unity_package_downloader.Decryption
 {
-    public static class Decryption
+    public static class Decryptor
     {
-        public static async Task DecryptString(string inputFile, string outputFile, IEnumerable<byte> key, byte[] iv)
+        public static async Task DecryptFile(string inputFile, string outputFile, IEnumerable<byte> key, byte[] iv)
         {
             var encryptor = Aes.Create();
 
             encryptor.Mode = CipherMode.CBC;
 
-            encryptor.Key = key.Take(32).ToArray();
+            encryptor.Key = [.. key.Take(32)];
             encryptor.IV = iv;
 
             var fileStream = File.OpenWrite(outputFile);

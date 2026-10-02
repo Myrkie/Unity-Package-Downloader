@@ -39,7 +39,6 @@ namespace Unity_package_downloader
                 await fileStream.WriteAsync(buffer, 0, bytesRead);
             }
         }
-
         
         protected async Task DownloadImage(string address, string filename)
         {

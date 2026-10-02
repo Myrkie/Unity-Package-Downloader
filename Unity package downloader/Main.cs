@@ -2,13 +2,14 @@
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 using Serilog;
+using static Serilog.Log;
 
 namespace Unity_package_downloader
 {
-    class Program
+    internal abstract class Program
     {
-        private static readonly ILogger Logger = Log.ForContext(typeof(Program));
-        static async Task<int> Main(string[] args)
+        private static readonly ILogger Logger = ForContext<Program>();
+        private static async Task<int> Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Verbose()
@@ -38,7 +39,7 @@ namespace Unity_package_downloader
             {
                 Logger.Information("Starting...");
 
-                Logger.Debug("Using Path: {path}", outputDirectory);
+                Logger.Debug("Using Path: {Path}", outputDirectory);
 
                 if (string.IsNullOrEmpty(token))
                 {
@@ -48,8 +49,7 @@ namespace Unity_package_downloader
 
                 if (!Path.Exists(outputDirectory))
                 {
-                    Logger.Fatal("Output directory does not exist");
-                    Environment.Exit(0);
+                    Directory.CreateDirectory(outputDirectory);
                 }
                 
                 var webRequests = new WebRequests();
@@ -58,8 +58,7 @@ namespace Unity_package_downloader
 
                 Thread.Sleep(5000);
             }, outputDirectoryOption, bearerToken);
-            var commandLineBuilder = new CommandLineBuilder(rootCommand)
-                .UseHelp();
+            var commandLineBuilder = new CommandLineBuilder(rootCommand).UseHelp();
 
             var built = commandLineBuilder.Build();
             return await built.InvokeAsync(args);

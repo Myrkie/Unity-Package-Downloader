@@ -15,13 +15,13 @@ namespace Unity_package_downloader
 
         private struct ResponseStruct
         {
-            public string? Id;
-            public string? Name;
-            public string? DownloadUrl;
+            public string Id;
+            public string Name;
+            public string DownloadUrl;
             public byte[]? AesKey;
             public string? Version;
-            public string? Author;
-            public string? Image;
+            public string Author;
+            public string Image;
         }
 
         private bool _endReached;
@@ -45,11 +45,11 @@ namespace Unity_package_downloader
             using var response =
                 await client.GetAsync($"https://packages-v2.unity.com/-/api/purchases?offset={offset}&limit=15&query=");
             response.EnsureSuccessStatusCode();
-            var responsebodyPurchases = await response.Content.ReadAsStringAsync();
+            var responseBodyPurchases = await response.Content.ReadAsStringAsync();
 
-            var deserializePurchasesJson = JsonSerializer.Deserialize(responsebodyPurchases, PurchaseJsonContext.Default.PurchaseRoot);
+            var deserializePurchasesJson = JsonSerializer.Deserialize(responseBodyPurchases, PurchaseJsonContext.Default.PurchaseRoot);
             
-            if (deserializePurchasesJson.results is { Length: > 0 })
+            if (deserializePurchasesJson?.results is { Length: > 0 })
             {
                 _endReached = false;
                 foreach (var result in deserializePurchasesJson.results)
@@ -68,24 +68,24 @@ namespace Unity_package_downloader
                 var responseinfo = await client.GetAsync(urlInfo);
                 if (responseinfo.StatusCode != HttpStatusCode.OK)
                 {
-                    _logger.Information("Package not downloadable {responsePackage}", responsePackage);
+                    _logger.Information("Package not downloadable {ResponsePackage}", responsePackage);
                     return;
                 }
 
                 var urlProduct = $"https://packages-v2.unity.com/-/api/product/{responsePackage}";
                 var responseProduct = await client.GetAsync(urlProduct);
-                var responsebodyProduct = await responseProduct.Content.ReadAsStringAsync();
-                var deserializeProductJson = JsonSerializer.Deserialize(responsebodyProduct, ProductJsonContext.Default.ProductRoot);
+                var responseBodyProduct = await responseProduct.Content.ReadAsStringAsync();
+                var deserializeProductJson = JsonSerializer.Deserialize(responseBodyProduct, ProductJsonContext.Default.ProductRoot);
 
-                _logger.Information("Downloading Json of: {responsePackage}", responsePackage);
+                _logger.Information("Downloading Json of: {ResponsePackage}", responsePackage);
 
-                var responsebodyInfo = await responseinfo.Content.ReadAsStringAsync();
-                var deserializeProductinfo = JsonSerializer.Deserialize(responsebodyInfo, ProductInfoJsonContext.Default.ProductInfoRoot);
+                var responseBodyInfo = await responseinfo.Content.ReadAsStringAsync();
+                var deserializeProductinfo = JsonSerializer.Deserialize(responseBodyInfo, ProductInfoJsonContext.Default.ProductInfoRoot);
 
                 if (deserializeProductinfo?.result.download != null)
                 {
                     // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
-                    var imageUrl = deserializeProductJson.mainImage.big ?? deserializeProductJson.mainImage.big_v2;
+                    var imageUrl = deserializeProductJson?.mainImage.big ?? deserializeProductJson?.mainImage.big_v2;
                     if (!string.IsNullOrEmpty(imageUrl))
                     {
                         var sResponsestruct = new ResponseStruct
@@ -97,8 +97,8 @@ namespace Unity_package_downloader
                                 ? Convert.FromHexString(deserializeProductinfo.result.download.key)
                                 : [],
                             Name = deserializeProductinfo.result.download.filename_safe_package_name,
-                            Image = $"http://{imageUrl.Replace(@"\", "/").Remove(0, 2)}",
-                            Version = deserializeProductJson.version.name
+                            Image = $"https://{imageUrl.Replace(@"\", "/").Remove(0, 2)}",
+                            Version = deserializeProductJson?.version.name
                         };
 
                         lock (_responses)
@@ -109,7 +109,7 @@ namespace Unity_package_downloader
                 }
                 else
                 {
-                    _logger.Error("Failed to deserialize information for package {errorPackage}", responsePackage);
+                    _logger.Error("Failed to deserialize information for package {ErrorPackage}", responsePackage);
                 }
             });
 
@@ -121,7 +121,7 @@ namespace Unity_package_downloader
             // ReSharper disable once InconsistentlySynchronizedField
             foreach (var downloads in _responses)
             {
-                _logger.Information("Asset name: {assetName} | Asset ID: {assetID}", downloads.Name, downloads.Id);
+                _logger.Information("Asset name: {AssetName} | Asset ID: {AssetID}", downloads.Name, downloads.Id);
                 var trimmedName = downloads.Name.Replace("-", "").Replace(".", "").Replace(" ", ".").Replace("..", ".");
                 var formattedName = string.Concat($"{downloads.Author.Replace(" ", ".")}_UnityAsset_{trimmedName}(V{downloads.Version})_{downloads.Id}");
 
@@ -133,26 +133,26 @@ namespace Unity_package_downloader
 
                 if (File.Exists($"{path}\\{formattedName}.jpg"))
                 {
-                    _logger.Information("File exists aborting: {fileDownload}.jpg", downloads.Name);
+                    _logger.Information("File exists aborting: {FileDownload}.jpg", downloads.Name);
                     continue;
                 }
 
-                _logger.Information("Downloading Image: {image}", downloads.Image);
+                _logger.Information("Downloading Image: {Image}", downloads.Image);
                 await DownloadImage(downloads.Image, $"{path}\\{formattedName}.jpg");
 
                 if (File.Exists($"{path}\\{formattedName}.unitypackage"))
                 {
-                    _logger.Information("File exists aborting: {fileDownload}", downloads.Name);
+                    _logger.Information("File exists aborting: {FileDownload}", downloads.Name);
                     continue;
                 }
 
-                _logger.Information("Downloading File: {fileDownload}", downloads.DownloadUrl);
+                _logger.Information("Downloading File: {FileDownload}", downloads.DownloadUrl);
                 await DownloadFile(downloads.DownloadUrl, $"{path}\\{formattedName}_Encrypted.AES");
 
-                if (downloads.AesKey.Length > 0)
+                if (downloads.AesKey is { Length: > 0 })
                 {
                     _logger.Information("Starting Decryption");
-                    await Decryption.Decryption.DecryptString($"{path}\\{formattedName}_Encrypted.AES",
+                    await Decryption.Decryptor.DecryptFile($"{path}\\{formattedName}_Encrypted.AES",
                         $"{path}\\{formattedName}.unitypackage", downloads.AesKey[..32], downloads.AesKey[32..]);
                     _logger.Information("Decryption Finished");
                     File.Delete($"{path}\\{formattedName}_Encrypted.AES");
