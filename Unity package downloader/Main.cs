@@ -24,11 +24,13 @@ namespace Unity_package_downloader
                 .CreateLogger();
         
             var rootCommand = new RootCommand("Unity Package Downloader");
-        
+
+            var commandCfg = $"{rootCommand.Name}.conf";
+            
             var outputDirectoryOption = new Option<string>(
                 name: "--output-dir",
                 description: "Output Directory",
-                getDefaultValue: () => $"./{rootCommand.Name}"
+                getDefaultValue: () => $"{commandCfg}/downloads/"
             );
         
             var bearerToken = new Option<string?>(

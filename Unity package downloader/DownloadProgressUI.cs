@@ -4,7 +4,18 @@ namespace Unity_package_downloader
 {
     public class DownloadProgressUi(string taskName)
     {
-        private static readonly char[] ProgressCharacters = ['⠀', '⣀', '⣄', '⣤', '⣦', '⣶', '⣷', '⣿'];
+        private static readonly char[] ProgressCharacters =
+        [
+            '⠀',
+            '⡀',
+            '⣀',
+            '⣄',
+            '⣤',
+            '⣦',
+            '⣶',
+            '⣷',
+            '⣿' 
+        ];
         private const int MaxProgressCharacters = 15;
         private const string Purple = "\e[38;2;136;1;154m";
         private const string Reset = "\e[0m";

@@ -127,27 +127,25 @@ namespace Unity_package_downloader
             foreach (var downloads in _responses)
             {
                 _logger.Information("Asset name: {AssetName} | Asset ID: {AssetID}", downloads.Name, downloads.Id);
-                var trimmedName = downloads.Name.Replace("-", "").Replace(".", "").Replace(" ", ".").Replace("..", ".");
-                var formattedName = $"{downloads.Author.Replace(" ", ".")}_UnityAsset_{trimmedName}(V{downloads.Version})_{downloads.Id}";
+                var trimmedName = downloads.Name.Replace("-", "").Replace(".", "");
+                var formattedName = $"{downloads.Author}_UnityAsset_{trimmedName}(V{downloads.Version})_{downloads.Id}";
 
-                DirectoryInfo info = new DirectoryInfo(path);
-                if (!info.Exists)
-                {
-                    info.Create();
-                }
+                Directory.CreateDirectory(path);
 
-                if (File.Exists($"{path}\\{formattedName}.jpg"))
+                var imagePath = Path.Combine(path, $"{formattedName}.jpg");
+                var outputPath = Path.Combine(path, $"{formattedName}.unitypackage");
+                var encryptedPath = Path.Combine(path, $"{formattedName}_Encrypted.AES");
+
+                if (File.Exists(imagePath))
                 {
                     _logger.Information("File exists aborting: {FileDownload}.jpg", downloads.Name);
                     continue;
                 }
 
                 _logger.Information("Downloading Image: {Image}", downloads.Image);
-                await DownloadImage(downloads.Image, $"{path}\\{formattedName}.jpg");
+                await DownloadImage(downloads.Image, imagePath);
 
                 var hasAesKey = downloads.AesKey is { Length: > 0 };
-                var outputPath = $"{path}\\{formattedName}.unitypackage";
-                var encryptedPath = $"{path}\\{formattedName}_Encrypted.AES";
 
                 if (File.Exists(outputPath))
                 {
