@@ -49,7 +49,7 @@ namespace Unity_package_downloader
             byte[] buffer = new byte[81920];
             progressUi.DrawProgress(downloadedBytes, totalBytes);
             int bytesRead;
-            while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            while ((bytesRead = await contentStream.ReadAsync(buffer)) > 0)
             {
                 await fileStream.WriteAsync(buffer, 0, bytesRead);
                 downloadedBytes += bytesRead;
